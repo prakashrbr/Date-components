@@ -1,0 +1,772 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Calendar Date Picker</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&family=Roboto:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="datepicker.css">
+<script>
+  // Resolve theme before paint.
+  (function () {
+    var t = null;
+    try { t = localStorage.getItem('dp-doc-theme'); } catch (e) {}
+    if (!t) t = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    document.documentElement.dataset.theme = t;
+  })();
+</script>
+<style>
+  :root {
+    --bg: #ffffff;
+    --side: #f2f8ff;
+    --panel: #f9fafb;
+    --panel-border: #eaecf0;
+    --card: #ffffff;
+    --text: #101828;
+    --muted: #364153;
+    --soft: #6a7282;
+    --accent: #155dfc;
+    --rule: #eaecf0;
+    --callout-bg: #dcfce7;
+    --callout-border: #b9f8cf;
+    --callout-text: #0d542b;
+    --chip-on: #ffffff;
+    color-scheme: light;
+  }
+  :root[data-theme="dark"] {
+    --bg: #0b111d;
+    --side: #0a1120;
+    --panel: #101828;
+    --panel-border: #1e2939;
+    --card: #101828;
+    --text: #f3f4f6;
+    --muted: #d1d5dc;
+    --soft: #99a1af;
+    --accent: #51a2ff;
+    --rule: #1e2939;
+    --callout-bg: rgba(0, 201, 80, .1);
+    --callout-border: rgba(0, 201, 80, .28);
+    --callout-text: #7bf1a8;
+    --chip-on: #1e2939;
+    color-scheme: dark;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font: 14px/1.55 'DM Sans', ui-sans-serif, system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  .app { display: grid; grid-template-columns: 380px minmax(0, 1fr); min-height: 100vh; }
+
+  /* ---------- Sidebar documentation ---------- */
+  .doc {
+    position: sticky; top: 0; height: 100vh; overflow-y: auto;
+    padding: 56px 40px 64px;
+    background: var(--side);
+    border-right: 1px solid var(--rule);
+    font-size: 13px; color: var(--muted);
+  }
+  .doc h1 { margin: 0 0 28px; font-size: 26px; font-weight: 500; line-height: 1.2; color: var(--text); letter-spacing: -.01em; }
+  .doc h3 { margin: 28px 0 10px; font-size: 14px; font-weight: 500; color: var(--accent); }
+  .doc p { margin: 0 0 10px; }
+  .doc ul, .doc ol { margin: 0 0 10px; padding-left: 20px; }
+  .doc li { margin: 2px 0; }
+  .doc ol ol { list-style: lower-alpha; margin-top: 2px; }
+  .callout {
+    margin: 12px 0; padding: 10px 12px; border-radius: 6px;
+    background: var(--callout-bg); border: 1px solid var(--callout-border); color: var(--callout-text);
+  }
+
+  /* ---------- Main ---------- */
+  main { padding: 0 56px 96px; }
+  .topbar {
+    position: sticky; top: 0; z-index: 100;
+    display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px 24px;
+    margin: 0 -56px; padding: 14px 56px;
+    background: color-mix(in srgb, var(--bg) 86%, transparent);
+    backdrop-filter: saturate(1.4) blur(10px); -webkit-backdrop-filter: saturate(1.4) blur(10px);
+    border-bottom: 1px solid var(--rule);
+  }
+  .topbar strong { font-size: 15px; font-weight: 600; }
+  .topbar .ctrls { display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: center; }
+  .ctrl-label { font-size: 12px; color: var(--soft); margin-right: 6px; }
+  .seg { display: inline-flex; padding: 3px; gap: 2px; border-radius: 10px; background: var(--panel); border: 1px solid var(--panel-border); }
+  .seg button {
+    height: 30px; padding: 0 12px; border: 0; border-radius: 7px; background: none; cursor: pointer;
+    font: 500 13px 'DM Sans', sans-serif; color: var(--soft);
+  }
+  .seg button:hover { color: var(--text); }
+  .seg button[aria-pressed="true"] { background: var(--chip-on); color: var(--text); box-shadow: 0 1px 2px rgba(16, 24, 40, .1), 0 0 0 1px var(--panel-border); }
+  .seg button:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+  section { padding-top: 56px; }
+  section + section { border-top: 1px solid var(--rule); margin-top: 56px; }
+  h2 { margin: 0 0 8px; font-size: 20px; font-weight: 500; letter-spacing: -.005em; }
+  .lede { margin: 0 0 24px; color: var(--soft); max-width: 70ch; }
+  h4 { margin: 0 0 14px; font-size: 14px; font-weight: 500; color: var(--accent); }
+  h5 { margin: 18px 0 6px; font-size: 12px; font-weight: 600; color: var(--text); }
+  .copy { font-size: 13px; color: var(--muted); }
+  .copy ul { margin: 0; padding-left: 18px; }
+  .copy li { margin: 2px 0; }
+
+  .panel { position: relative; background: var(--panel); border: 1px solid var(--panel-border); border-radius: 12px; }
+  .card { background: var(--card); border: 1px solid var(--panel-border); border-radius: 10px; }
+
+  /* Playground */
+  .play { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 20px; }
+  .play .panel { min-height: 560px; padding: 48px; display: flex; justify-content: center; }
+  .info { padding: 20px; font-size: 13px; color: var(--muted); }
+  .info h5:first-child { margin-top: 0; }
+  .readout { font-size: 18px; font-weight: 500; color: var(--text); margin: 2px 0 4px; }
+  .keys { display: grid; grid-template-columns: auto 1fr; gap: 6px 12px; align-items: center; margin: 0; }
+  .keys dt { white-space: nowrap; }
+  .keys dd { margin: 0; }
+  .kbd {
+    display: inline-block; min-width: 22px; padding: 0 5px; height: 22px; line-height: 20px; text-align: center;
+    border: 1px solid var(--panel-border); border-radius: 5px; background: var(--card);
+    font: 500 11px 'DM Sans', sans-serif; color: var(--soft);
+  }
+  .try li { margin: 4px 0; }
+  code { font: 12px ui-monospace, 'Cascadia Code', Consolas, monospace; padding: 1px 5px; border-radius: 4px; background: var(--panel); border: 1px solid var(--panel-border); }
+
+  /* Anatomy */
+  .anatomy { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr); gap: 20px; }
+  .stage { padding: 56px 72px; display: flex; justify-content: center; align-items: flex-start; min-height: 600px; }
+  .callouts { position: absolute; inset: 0; pointer-events: none; }
+  .co-line { position: absolute; height: 1px; }
+  .co-dot {
+    position: absolute; width: 24px; height: 24px; margin-top: -12px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font: 500 11px 'DM Sans', sans-serif; color: #fff;
+  }
+  .parts { padding: 28px; }
+  .parts ol { margin: 0 0 24px; padding-left: 18px; font-size: 13px; color: var(--muted); }
+  .parts ol li { margin: 8px 0; }
+  .parts ol b { font-weight: 500; color: var(--text); }
+  .legend { padding: 20px 20px 16px; }
+  .legend h5 { margin: 0 0 18px; font-size: 13px; font-weight: 600; }
+  .lg-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px 8px; }
+  .dp.lg-grid { width: auto; max-width: none; }
+  .lg-item { display: flex; flex-direction: column; align-items: center; gap: 8px; font-size: 12px; text-align: center; color: var(--muted); }
+  .lg-item .dp-cell { width: 44px; }
+  .lg-item .dp-day { pointer-events: none; }
+
+  /* States */
+  .states { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px 20px; }
+  .state figure { margin: 0; }
+  .state .panel { height: 220px; display: flex; align-items: center; justify-content: center; padding: 24px; }
+  .state figcaption { margin-top: 12px; text-align: center; font-size: 13px; color: var(--text); }
+  .state figcaption span { display: block; font-size: 12px; color: var(--soft); }
+
+  /* Functionalities */
+  .feature { display: grid; grid-template-columns: minmax(0, 1fr) minmax(620px, 1.6fr); gap: 32px; align-items: start; }
+  .feature + .feature { margin-top: 48px; }
+  .demo { min-height: 600px; padding: 48px 32px; }
+  .panel > div:not(.callouts) { max-width: 100%; }
+  .state .panel > div { width: 320px; }
+
+  /* Variations */
+  .vars { display: grid; grid-template-columns: repeat(auto-fill, minmax(372px, 1fr)); gap: 20px; }
+  .var .well > div { max-width: 100%; }
+  .var { border-radius: 12px; border: 1px solid var(--panel-border); overflow: visible; }
+  .var header { display: flex; justify-content: space-between; align-items: baseline; padding: 14px 18px; border-bottom: 1px solid var(--panel-border); }
+  .var header b { font-weight: 500; font-size: 14px; }
+  .var header span { font-size: 12px; color: var(--soft); }
+  .var .well { display: flex; justify-content: center; padding: 28px 16px 36px; border-radius: 0 0 12px 12px; }
+  .var.light { background: #ffffff; color: #101828; border-color: #eaecf0; }
+  .var.light header { border-color: #eaecf0; }
+  .var.light header span { color: #6a7282; }
+  .var.dark { background: #101828; color: #f3f4f6; border-color: #1e2939; }
+  .var.dark header { border-color: #1e2939; }
+  .var.dark header span { color: #99a1af; }
+  .var-row-label { grid-column: 1 / -1; margin: 12px 0 -4px; font-size: 12px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--soft); }
+  .tokens { margin-top: 28px; overflow-x: auto; }
+  .tokens table { width: 100%; border-collapse: collapse; font-size: 12px; min-width: 720px; }
+  .tokens th, .tokens td { padding: 9px 12px; text-align: left; border-bottom: 1px solid var(--rule); }
+  .tokens th { font-weight: 500; color: var(--soft); }
+  .tokens td:first-child { color: var(--text); font-weight: 500; }
+  .sw { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; color: var(--muted); }
+  .sw i { width: 12px; height: 12px; border-radius: 3px; box-shadow: inset 0 0 0 1px rgba(127, 127, 127, .35); }
+
+  footer.note { margin-top: 64px; font-size: 12px; color: var(--soft); }
+
+  @media (max-width: 1540px) { .anatomy { grid-template-columns: 1fr; } }
+  @media (max-width: 1400px) { .feature { grid-template-columns: 1fr; } }
+  @media (max-width: 1280px) {
+    .vars { grid-template-columns: repeat(auto-fill, minmax(360px, 1fr)); }
+  }
+  @media (max-width: 1080px) {
+    .app { grid-template-columns: minmax(0, 1fr); }
+    .doc { position: static; height: auto; border-right: 0; border-bottom: 1px solid var(--rule); padding: 36px 24px; }
+    main { padding: 0 24px 72px; }
+    .topbar { margin: 0 -24px; padding: 12px 24px; }
+    .play { grid-template-columns: 1fr; }
+    .states { grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); }
+  }
+  @media (max-width: 640px) {
+    main { padding: 0 16px 64px; }
+    .topbar { margin: 0 -16px; padding: 10px 16px; }
+    .doc { padding: 28px 16px; }
+    .play .panel, .stage, .demo, .demo.wide { padding: 24px 12px; }
+    .stage, .demo { min-height: 0; }
+    .lg-grid { grid-template-columns: repeat(2, 1fr); }
+    .vars { grid-template-columns: 1fr; }
+    .var .well { padding: 20px 8px 28px; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="doc" aria-label="Documentation">
+    <h1>1. Calendar Date Picker</h1>
+    <p style="display:flex;gap:14px;flex-wrap:wrap"><a href="../date-range-picker/index.html" style="color:var(--accent);text-decoration:none;font-size:12px">2. Date Range Picker →</a>
+      <a href="../actual-date-time/index.html" style="color:var(--accent);text-decoration:none;font-size:12px">4. Actual Date &amp; Time →</a>
+      <a href="../time-picker/index.html" style="color:var(--accent);text-decoration:none;font-size:12px">5. Time Picker With Presets →</a></p>
+    <p>A Calendar Date Picker allows users to select a date from a visual calendar.</p>
+    <p>Goal: make date discovery quick and provide useful calendar context.</p>
+    <p>Examples: appointment date, procedure date, follow-up date, scheduled admission.</p>
+
+    <h3>When To Use</h3>
+    <ul>
+      <li>When the user needs to find and select a date.</li>
+      <li>When calendar context helps the user make a decision.</li>
+      <li>When availability, events, or clinical rules affect date selection.</li>
+      <li>When the date is relatively close to the current date.</li>
+    </ul>
+
+    <h3>When Not To Use</h3>
+    <ul>
+      <li>Known Date → when the date is already known and can be entered directly.</li>
+      <li>Date Range → when selecting a start and end date.</li>
+      <li>Date-Time → when both date and time are required.</li>
+      <li>Clinical Date → when the date is approximate, partial, or unknown.</li>
+    </ul>
+    <p>Use a calendar when seeing the dates helps the user decide.</p>
+
+    <h3>Input Rules</h3>
+    <ul>
+      <li>Allow direct date entry alongside calendar selection.</li>
+      <li>Use clear date formatting and locale-appropriate ordering.</li>
+      <li>Support keyboard navigation and selection.</li>
+      <li>Prefer four-digit years.</li>
+      <li>Avoid requiring unnecessary leading zeros.</li>
+    </ul>
+
+    <h3>Behavior</h3>
+    <ul>
+      <li>Users should be able to:
+        <ol>
+          <li>Type a date directly.</li>
+          <li>Open the calendar.</li>
+          <li>Navigate between months and years.</li>
+          <li>Select a date.</li>
+          <li>Navigate and select using the keyboard.</li>
+          <li>Return to today when useful.</li>
+        </ol>
+      </li>
+      <li>Avoid:
+        <ol>
+          <li>Automatically changing the selected date.</li>
+          <li>Automatically moving focus between fields.</li>
+          <li>Hiding the current selection.</li>
+          <li>Requiring calendar navigation when direct entry is faster.</li>
+        </ol>
+      </li>
+    </ul>
+
+    <h3>Smart Behavior</h3>
+    <p>The calendar can adapt to the clinical context by showing:</p>
+    <ul>
+      <li>Today</li>
+      <li>Recommended dates</li>
+      <li>Dates with events</li>
+      <li>Unavailable dates</li>
+      <li>Clinical date ranges</li>
+      <li>Relevant scheduling information</li>
+    </ul>
+    <div class="callout">Smart behavior should reduce effort while keeping the clinician in control.</div>
+
+    <h3>Recommendation Rules</h3>
+    <p>Since your component has Recommended Dates, establish the principle here.</p>
+    <ul>
+      <li>Recommendations must be based on clear clinical or workflow rules.</li>
+      <li>Always provide a reason for a recommendation.</li>
+      <li>Recommendations should guide, not force, the user's choice.</li>
+    </ul>
+    <p>This prevents the smart functionality from becoming arbitrary.</p>
+
+    <h3>Validation &amp; Constraints</h3>
+    <ul>
+      <li>Prevent invalid or clinically restricted dates.</li>
+      <li>Support minimum, maximum, and dependent dates.</li>
+      <li>Explain relevant restrictions when a date is unavailable.</li>
+    </ul>
+  </aside>
+
+  <main>
+    <div class="topbar">
+      <strong>Calendar Date Picker</strong>
+      <div class="ctrls">
+        <div><span class="ctrl-label" id="ds-label">Design system</span>
+          <div class="seg" role="group" aria-labelledby="ds-label" id="ds-switch">
+            <button type="button" data-ds="custom" aria-pressed="true">Custom</button>
+            <button type="button" data-ds="ant" aria-pressed="false">Ant Design</button>
+            <button type="button" data-ds="mui" aria-pressed="false">MUI</button>
+          </div>
+        </div>
+        <div><span class="ctrl-label" id="th-label">Theme</span>
+          <div class="seg" role="group" aria-labelledby="th-label" id="theme-switch">
+            <button type="button" data-theme="light">Light</button>
+            <button type="button" data-theme="dark">Dark</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Playground -->
+    <section id="playground" style="padding-top:40px">
+      <h2>Playground</h2>
+      <p class="lede">Uses today's real date. Try typing a date, the quick actions, the recommended window, events, unavailable dates, and keyboard navigation.</p>
+      <div class="play">
+        <div class="panel"><div id="pg"></div></div>
+        <div class="card info">
+          <h5>Selected value</h5>
+          <div class="readout" id="pg-out">None</div>
+          <div id="pg-iso" style="color:var(--soft);font-size:12px">Type a date or pick one from the calendar</div>
+
+          <h5>Try</h5>
+          <ul class="try" style="padding-left:18px;margin:0">
+            <li>Type <code>13/05/2026</code>, then press Enter to see validation</li>
+            <li>Type <code>8/3/2027</code>. Leading zeros are optional</li>
+            <li>Hover a pink date to see why it's recommended</li>
+            <li>Open <b>Recommended</b> to see the follow-up window</li>
+            <li>Click the month title to change the year</li>
+          </ul>
+
+          <h5>Keyboard</h5>
+          <dl class="keys">
+            <dt><span class="kbd">↓</span></dt><dd>Open calendar from the input</dd>
+            <dt><span class="kbd">←</span> <span class="kbd">→</span> <span class="kbd">↑</span> <span class="kbd">↓</span></dt><dd>Move by day / week</dd>
+            <dt><span class="kbd">PgUp</span> <span class="kbd">PgDn</span></dt><dd>Month (with Shift: year)</dd>
+            <dt><span class="kbd">Home</span> <span class="kbd">End</span></dt><dd>Start / end of week</dd>
+            <dt><span class="kbd">↵</span></dt><dd>Select date</dd>
+            <dt><span class="kbd">Esc</span></dt><dd>Close / back to days</dd>
+          </dl>
+        </div>
+      </div>
+    </section>
+
+    <!-- Anatomy -->
+    <section id="anatomy">
+      <h2>Anatomy</h2>
+      <p class="lede">The callouts are measured from the rendered component, so they track each design system's layout.</p>
+      <div class="anatomy">
+        <div class="panel stage" id="anat-stage"><div id="anat"></div><div class="callouts" aria-hidden="true"></div></div>
+        <div class="panel parts">
+          <ol>
+            <li><b>Input field</b> – Displays the selected date. Allows manual input in mm/dd/yyyy format.</li>
+            <li><b>Quick actions</b> – Provides shortcuts for common date selections and recommendations.</li>
+            <li><b>Month / year navigation</b> – Navigates between months and years.</li>
+            <li><b>Weekday header</b> – Displays days of the week to provide context.</li>
+            <li><b>Calendar grid</b> – Days of the month, clickable for selection.</li>
+            <li><b>Keyboard navigation guide</b> – A guide to using the keyboard for navigating and selecting dates.</li>
+          </ol>
+          <div class="card legend">
+            <h5>Dates Legend</h5>
+            <div id="legend"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- States -->
+    <section id="states">
+      <h2>States</h2>
+      <p class="lede">Input field states. The error example uses the spec's message text.</p>
+      <div class="states" id="states-grid"></div>
+    </section>
+
+    <!-- Functionalities -->
+    <section id="functionalities">
+      <h2>Functionalities</h2>
+      <p class="lede">Each demo is interactive. Tooltips are pinned open to match the spec, and hovering other dates moves them. Picking a date closes the calendar; click the field to open it again.</p>
+
+      <div class="feature">
+        <div class="copy">
+          <h4>1. Recommended Dates</h4>
+          <h5>Where To Use</h5>
+          <ul>
+            <li>When a date is clinically or operationally preferred.</li>
+            <li>When the system has enough context to identify a better date.</li>
+            <li>Useful for follow-ups, reviews, procedures, and appointments.</li>
+          </ul>
+          <h5>When To Use</h5>
+          <ul>
+            <li>When there is a recommended time window.</li>
+            <li>When availability or clinical rules influence the choice.</li>
+            <li>When choosing one date from multiple valid options.</li>
+          </ul>
+          <h5>How To Use</h5>
+          <ul>
+            <li>Mark the date clearly as Recommended.</li>
+            <li>Provide a short reason on hover/focus.</li>
+            <li>Keep other valid dates selectable.</li>
+            <li>Don't recommend a date without a clear reason.</li>
+          </ul>
+        </div>
+        <div class="panel demo wide"><div id="f-rec"></div></div>
+      </div>
+
+      <div class="feature">
+        <div class="copy">
+          <h4>2. Dates With Events</h4>
+          <h5>Where To Use</h5>
+          <ul>
+            <li>When a date has one or more relevant events.</li>
+            <li>Useful for appointments, procedures, follow-ups, and clinical activities.</li>
+          </ul>
+          <h5>When To Use</h5>
+          <ul>
+            <li>When existing events may influence the user's date selection.</li>
+            <li>When the user needs quick visibility into scheduled activities.</li>
+          </ul>
+          <h5>How To Use</h5>
+          <ul>
+            <li>Mark the date with a subtle event indicator.</li>
+            <li>Show event details on hover or focus.</li>
+            <li>Display only relevant event information.</li>
+            <li>Keep the date selectable unless the event makes it unavailable.</li>
+          </ul>
+        </div>
+        <div class="panel demo wide"><div id="f-ev"></div></div>
+      </div>
+
+      <div class="feature">
+        <div class="copy">
+          <h4>3. Contextual Quick Actions</h4>
+          <h5>Where To Use</h5>
+          <ul>
+            <li>When common date choices are predictable for the workflow.</li>
+            <li>Useful for appointments, follow-ups, procedures, and clinical documentation.</li>
+            <li>When shortcuts can reduce unnecessary calendar navigation.</li>
+          </ul>
+          <h5>When To Use</h5>
+          <ul>
+            <li>When users frequently select relative or clinically relevant dates.</li>
+            <li>When the current context provides meaningful actions such as Today, Recommended, Tomorrow, or Yesterday.</li>
+            <li>When a quick action can save repeated date selection.</li>
+          </ul>
+          <h5>How To Use</h5>
+          <ul>
+            <li>Show only actions relevant to the current context.</li>
+            <li>Keep actions short and easy to scan.</li>
+            <li>Place them above the calendar for quick access.</li>
+            <li>Limit the number of actions to avoid clutter.</li>
+            <li>Make the result of each action clear before selection.</li>
+          </ul>
+          <h5>Few Examples</h5>
+          <ul>
+            <li>Follow-up: Recommended · +7 days · +14 days</li>
+            <li>Appointment: Today · Tomorrow · This week</li>
+            <li>Procedure: Recommended · Today · Tomorrow</li>
+            <li>Medication review: +14 days · +30 days · Recommended</li>
+            <li>Discharge: Today · Tomorrow</li>
+            <li>Clinical documentation: Today · Yesterday · 7 days ago</li>
+            <li>Lab monitoring: Recommended · +7 days · +30 days</li>
+          </ul>
+        </div>
+        <div class="panel demo" style="display:flex;justify-content:center"><div id="f-qa"></div></div>
+      </div>
+    </section>
+
+    <!-- Year change -->
+    <section id="year">
+      <h2>Year Change</h2>
+      <p class="lede">Select the month title to change the year. The spec opens a floating year picker that scrolls, centered on the current year. Ant Design shows a decade panel, and MUI shows a scrolling year list.</p>
+      <div class="panel demo" style="display:flex;justify-content:center;min-height:560px"><div id="f-year"></div></div>
+    </section>
+
+    <!-- Variations -->
+    <section id="variations">
+      <h2>Design System Variations</h2>
+      <p class="lede">The same component and data in all three skins and both themes. Every skin uses the same colours; only shape, size and font follow each library. This grid ignores the switches above.</p>
+      <div class="vars" id="vars"></div>
+
+      <div class="tokens">
+        <table>
+          <thead><tr><th>Shared colour</th><th>Light</th><th>Dark</th><th>Used by</th></tr></thead>
+          <tbody id="tok"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <footer class="note">Files: <code>datepicker.js</code> (component) · <code>datepicker.css</code> (tokens + three skins) · <code>index.html</code> (this page).</footer>
+  </main>
+</div>
+
+<script src="datepicker.js"></script>
+<script>
+(function () {
+  const { toKey, addDays, MONTHS } = DatePicker.utils;
+  const root = document.documentElement;
+  let DS = 'custom';
+  try { DS = localStorage.getItem('dp-doc-ds') || 'custom'; } catch (e) {}
+  if (!['custom', 'ant', 'mui'].includes(DS)) DS = 'custom';
+  let THEME = root.dataset.theme;
+
+  /* ---------------- Demo data (from spec: December 2025) ---------------- */
+  const WHY = {
+    title: 'Why this date?',
+    reason: "2 weeks after the patient's procedure, within the recommended follow-up window.",
+    checks: ['Provider available', 'No scheduling conflicts']
+  };
+  const DEC = {
+    today: '2025-12-02',
+    value: '2025-12-10',
+    unavailable: {
+      '2025-12-11': 'Provider on leave (Dec 11–14).',
+      '2025-12-12': 'Provider on leave (Dec 11–14).',
+      '2025-12-13': 'Provider on leave (Dec 11–14).',
+      '2025-12-14': 'Provider on leave (Dec 11–14).'
+    },
+    events: {
+      '2025-12-07': { title: '2 Appointments scheduled', items: ['10:00 AM — Follow-up', '2:30 PM — Consultation'] }
+    },
+    recommended: { '2025-12-23': WHY, '2025-12-24': WHY },
+    recommendation: {
+      summary: 'Follow-up is recommended 3 weeks after the procedure on 2 December 2025.',
+      candidates: ['2025-12-22', '2025-12-23', '2025-12-24', '2025-12-25', '2025-12-26', '2025-12-29', '2025-12-30', '2025-12-31']
+    }
+  };
+  const QA_SPEC = [{ label: 'Calendar', view: 'days' }, { label: 'Recommended', view: 'recommended' }, { label: 'Today', offset: 0 }];
+
+  // Contextual quick actions — September 2026 (spec).
+  const WHY_SEP = {
+    title: 'Why this date?',
+    reason: 'Inside the 7–14 day follow-up window after the procedure on 14 September 2026.',
+    checks: ['Provider available', 'No scheduling conflicts']
+  };
+  const SEP = {
+    today: '2026-09-18',
+    value: '2026-09-23',
+    unavailable: { '2026-09-21': 'Provider on leave.' },
+    events: {
+      '2026-09-22': { title: '2 Appointments scheduled', items: ['9:00 AM — Lab review', '1:15 PM — Follow-up'] },
+      '2026-09-30': { title: '2 Appointments scheduled', items: ['10:00 AM — Imaging', '3:00 PM — Consultation'] },
+      '2026-10-03': { title: '2 Appointments scheduled', items: ['11:00 AM — Physiotherapy', '4:00 PM — Follow-up'] }
+    },
+    recommended: { '2026-09-23': WHY_SEP, '2026-09-24': WHY_SEP },
+    recommendation: {
+      summary: 'Follow-up is recommended 7–14 days after the procedure on 14 September 2026.',
+      candidates: ['2026-09-20', '2026-09-22', '2026-09-23', '2026-09-24', '2026-09-25', '2026-09-26', '2026-09-27', '2026-09-28', '2026-09-29', '2026-09-30', '2026-10-01', '2026-10-02', '2026-10-03']
+    }
+  };
+
+  // Playground: generated relative to the real today.
+  function playgroundData() {
+    const t = new Date(); const today = new Date(t.getFullYear(), t.getMonth(), t.getDate());
+    const at = n => addDays(today, n);
+    const proc = at(-2);
+    const unavailable = {};
+    for (let i = 12; i <= 15; i++) unavailable[toKey(at(i))] = `Provider on leave (${MONTHS[at(12).getMonth()].slice(0, 3)} ${at(12).getDate()}–${MONTHS[at(15).getMonth()].slice(0, 3)} ${at(15).getDate()}).`;
+    const why = n => ({
+      title: 'Why this date?',
+      reason: `${n} days after the patient's procedure, in the middle of the 7–14 day follow-up window.`,
+      checks: ['Provider available', 'No scheduling conflicts']
+    });
+    const recommended = {}; recommended[toKey(at(7))] = why(9); recommended[toKey(at(8))] = why(10);
+    const events = {};
+    events[toKey(at(1))] = { title: '1 Appointment scheduled', items: ['9:00 AM — Lab review'] };
+    events[toKey(at(6))] = { title: '2 Appointments scheduled', items: ['10:00 AM — Follow-up', '2:30 PM — Consultation'] };
+    events[toKey(at(9))] = { title: '1 Appointment scheduled', items: ['11:30 AM — Physiotherapy'] };
+    const candidates = [];
+    for (let i = 5; i <= 12; i++) if (!unavailable[toKey(at(i))]) candidates.push(toKey(at(i)));
+    return {
+      today, unavailable, recommended, events,
+      recommendation: {
+        summary: `Follow-up is recommended 7–14 days after the procedure on ${proc.getDate()} ${MONTHS[proc.getMonth()]} ${proc.getFullYear()}.`,
+        candidates
+      }
+    };
+  }
+
+  /* ---------------- Mount ---------------- */
+  const themed = [];   // follow the global DS + theme switches
+  const make = (id, opts) => {
+    const p = new DatePicker(document.getElementById(id), Object.assign({ ds: DS, theme: THEME }, opts));
+    themed.push(p);
+    return p;
+  };
+
+  // Playground
+  const out = document.getElementById('pg-out'), iso = document.getElementById('pg-iso');
+  make('pg', Object.assign(playgroundData(), {
+    onChange: d => {
+      out.textContent = d ? d.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' }) : 'None';
+      iso.textContent = d ? `ISO: ${toKey(d)}` : 'Type a date or pick one from the calendar';
+    }
+  }));
+
+  // Anatomy
+  make('anat', Object.assign({}, DEC, {
+    inline: true, quickActions: QA_SPEC,
+    value: '2025-12-10', text: ''
+  }));
+
+  // States
+  const STATES = [
+    ['Default', 'Resting, empty', {}],
+    ['Focused', 'Keyboard focus: border + focus ring', { state: 'focused' }],
+    ['Active', 'Open / being interacted with', { state: 'active' }],
+    ['Filled', 'Contains a valid date', { value: '2026-08-30' }],
+    ['Disabled', 'Not editable', { value: '2026-08-30', state: 'disabled' }],
+    ['Error', 'Validation message below', { text: '08/30/2026', error: 'Please enter appropriate month' }]
+  ];
+  const sg = document.getElementById('states-grid');
+  STATES.forEach(([name, sub, o], i) => {
+    const f = document.createElement('div');
+    f.className = 'state';
+    f.innerHTML = `<figure><div class="panel"><div id="st${i}"></div></div><figcaption>${name}<span>${sub}</span></figcaption></figure>`;
+    sg.appendChild(f);
+    make('st' + i, Object.assign({ static: true, today: '2025-12-02' }, o));
+  });
+
+  // Functionalities
+  make('f-rec', Object.assign({}, DEC, { inline: true, quickActions: QA_SPEC, text: '', demo: { tooltip: '2025-12-24', hover: '2025-12-24' } }));
+  make('f-ev', Object.assign({}, DEC, { inline: true, quickActions: QA_SPEC, text: '', demo: { tooltip: '2025-12-07', hover: '2025-12-07' } }));
+  make('f-qa', Object.assign({}, SEP, { inline: true, quickActions: QA_SPEC, text: '', demo: { view: 'recommended' } }));
+  make('f-year', Object.assign({}, DEC, { inline: true, quickActions: QA_SPEC, text: '', value: null, viewMonth: '2025-12-01', demo: { view: 'years' } }));
+
+  // Variations grid (fixed DS/theme)
+  const vars = document.getElementById('vars');
+  const DSN = { custom: ['Custom', 'Spec shapes · DM Sans'], ant: ['Ant Design', 'Ant shapes · system font'], mui: ['MUI', 'MUI shapes · Roboto'] };
+  ['light', 'dark'].forEach(th => {
+    const lab = document.createElement('div');
+    lab.className = 'var-row-label';
+    lab.textContent = th === 'light' ? 'Light mode' : 'Dark mode';
+    vars.appendChild(lab);
+    ['custom', 'ant', 'mui'].forEach(ds => {
+      const c = document.createElement('div');
+      c.className = `var ${th}`;
+      c.dataset.ds = ds;
+      c.innerHTML = `<header><b>${DSN[ds][0]}</b><span>${DSN[ds][1]}</span></header><div class="well"><div id="v-${ds}-${th}"></div></div>`;
+      vars.appendChild(c);
+      new DatePicker(document.getElementById(`v-${ds}-${th}`), Object.assign({}, DEC, { ds, theme: th, inline: true, quickActions: QA_SPEC }));
+    });
+  });
+
+  // Token comparison table
+  const TOK = [
+    ['Page / popover surface', '#ffffff', '#101828 / #030712', 'All skins'],
+    ['Text', '#101828', '#ffffff', 'All skins'],
+    ['Muted text (weekdays, hints)', '#6a7282', '#99a1af', 'All skins'],
+    ['Unavailable / disabled', '#99a1af', '#6a7282', 'All skins'],
+    ['Input border', '#d1d5dc', '#4a5565', 'All skins'],
+    ['Popover border', '#eaecf0', '#364153', 'All skins'],
+    ['Divider', '#f2f3f5', '#1e2939', 'All skins'],
+    ['Active chip', '#eaecf0', '#364153', 'All skins'],
+    ['Primary / selected', '#155dfc', '#2b7fff', 'All skins'],
+    ['Focus border', '#2b7fff', '#2b7fff', 'All skins'],
+    ['Error', '#fb2c36', '#fb2c36', 'All skins'],
+    ['Event marker', '#bb4d00', '#e17100', 'All skins'],
+    ['Recommended border', '#fed4ea', '#c2447f', 'All skins']
+  ];
+  const isColor = v => /^#|^rgba/.test(v);
+  document.getElementById('tok').innerHTML = TOK.map(r =>
+    `<tr>${r.map((v, i) => i === 0 ? `<td>${v}</td>` : `<td>${isColor(v) ? `<span class="sw"><i style="background:${v}"></i>${v}</span>` : `<span class="sw">${v}</span>`}</td>`).join('')}</tr>`
+  ).join('');
+
+  /* ---------------- Legend ---------------- */
+  function renderLegend() {
+    const cell = (cls, marks = '') => `<div class="dp-cell"><span class="dp-day ${cls}"><span class="dp-num">1</span>${marks ? `<span class="dp-marks">${marks}</span>` : ''}</span></div>`;
+    const items = [
+      ['', 'Default'],
+      ['is-hover', 'Hover'],
+      ['is-unavail', 'Not available'],
+      ['is-selected', 'Selected'],
+      ['is-today', 'Today', '<i class="dp-dot"></i>'],
+      ['is-rec', 'Recommended'],
+      ['is-today is-selected', 'Today selected', '<i class="dp-dot"></i>'],
+      ['has-ev', 'Has events', '<span class="dp-ev"><i></i><i></i></span>']
+    ];
+    document.getElementById('legend').innerHTML =
+      `<div class="dp lg-grid" data-ds="${DS}" data-theme="${THEME}" style="background:none">` +
+      items.map(([c, l, m]) => `<div class="lg-item${c === 'is-unavail' ? ' ' : ''}">${cell(c, m)}<span>${l}</span></div>`).join('') + `</div>`;
+    // Ant's unavailable band lives on the cell
+    document.querySelectorAll('#legend .dp-day.is-unavail').forEach(d => d.parentElement.classList.add('is-unavail'));
+  }
+
+  /* ---------------- Anatomy callouts ---------------- */
+  const stage = document.getElementById('anat-stage');
+  const CO = [
+    [1, '.dp-box', 'right', '#0055ff'],
+    [2, '.dp-quick', 'left', '#c534ff'],
+    [3, '.dp-head', 'right', '#d38900'],
+    [4, '.dp-weekdays', 'left', '#ff013c'],
+    [5, '.dp-grid', 'right', '#0cb000'],
+    [6, '.dp-foot', 'left', '#fb7a24']
+  ];
+  function annotate() {
+    const layer = stage.querySelector('.callouts');
+    layer.innerHTML = '';
+    const sr = stage.getBoundingClientRect();
+    const pop = stage.querySelector('.dp-pop');
+    if (!pop) return;
+    const pr = pop.getBoundingClientRect();
+    if (pr.left - sr.left < 72 || sr.right - pr.right < 72) return;   // not enough room for callouts
+    let html = '';
+    CO.forEach(([n, sel, side, color]) => {
+      const el = stage.querySelector(sel);
+      if (!el) return;
+      const r = el.getBoundingClientRect();
+      const y = Math.round(r.top + r.height / 2 - sr.top);
+      if (side === 'right') {
+        const x0 = (n === 1 ? r.right : pr.right) - sr.left, x1 = pr.right - sr.left + 40;
+        html += `<div class="co-line" style="left:${x0}px;top:${y}px;width:${x1 - x0}px;background:${color}"></div>` +
+          `<div class="co-dot" style="left:${x1}px;top:${y}px;background:${color}">${n}</div>`;
+      } else {
+        const x1 = pr.left - sr.left, x0 = x1 - 40;
+        html += `<div class="co-line" style="left:${x0}px;top:${y}px;width:${x1 - x0}px;background:${color}"></div>` +
+          `<div class="co-dot" style="left:${x0 - 24}px;top:${y}px;background:${color}">${n}</div>`;
+      }
+    });
+    layer.innerHTML = html;
+  }
+  let raf = 0;
+  const schedule = () => { cancelAnimationFrame(raf); raf = requestAnimationFrame(annotate); };
+  new MutationObserver(schedule).observe(document.getElementById('anat'), { childList: true, subtree: true, attributes: true, attributeFilter: ['class', 'data-ds'] });
+  new ResizeObserver(schedule).observe(stage);
+  document.fonts && document.fonts.ready.then(schedule);
+
+  /* ---------------- Switches ---------------- */
+  const dsBtns = [...document.querySelectorAll('#ds-switch button')];
+  const thBtns = [...document.querySelectorAll('#theme-switch button')];
+  function reflect() {
+    dsBtns.forEach(b => b.setAttribute('aria-pressed', String(b.dataset.ds === DS)));
+    thBtns.forEach(b => b.setAttribute('aria-pressed', String(b.dataset.theme === THEME)));
+  }
+  dsBtns.forEach(b => b.addEventListener('click', () => {
+    DS = b.dataset.ds;
+    try { localStorage.setItem('dp-doc-ds', DS); } catch (e) {}
+    themed.forEach(p => p.setDS(DS));
+    renderLegend(); reflect(); schedule();
+  }));
+  thBtns.forEach(b => b.addEventListener('click', () => {
+    THEME = b.dataset.theme;
+    root.dataset.theme = THEME;
+    try { localStorage.setItem('dp-doc-theme', THEME); } catch (e) {}
+    themed.forEach(p => p.setTheme(THEME));
+    renderLegend(); reflect();
+  }));
+
+  renderLegend();
+  reflect();
+  schedule();
+})();
+</script>
+</body>
+</html>

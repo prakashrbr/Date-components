@@ -1,0 +1,732 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Date Range Picker</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&family=Roboto:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../calendar-date-picker/datepicker.css">
+<link rel="stylesheet" href="daterangepicker.css">
+<script>
+  // Resolve theme before paint.
+  (function () {
+    var t = null;
+    try { t = localStorage.getItem('dp-doc-theme'); } catch (e) {}
+    if (!t) t = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    document.documentElement.dataset.theme = t;
+  })();
+</script>
+<style>
+  :root {
+    --bg: #ffffff;
+    --side: #f2f8ff;
+    --panel: #f9fafb;
+    --panel-border: #eaecf0;
+    --card: #ffffff;
+    --text: #101828;
+    --muted: #364153;
+    --soft: #6a7282;
+    --accent: #155dfc;
+    --rule: #eaecf0;
+    --callout-bg: #dcfce7;
+    --callout-border: #b9f8cf;
+    --callout-text: #0d542b;
+    --chip-on: #ffffff;
+    color-scheme: light;
+  }
+  :root[data-theme="dark"] {
+    --bg: #0b111d;
+    --side: #0a1120;
+    --panel: #101828;
+    --panel-border: #1e2939;
+    --card: #101828;
+    --text: #f3f4f6;
+    --muted: #d1d5dc;
+    --soft: #99a1af;
+    --accent: #51a2ff;
+    --rule: #1e2939;
+    --callout-bg: rgba(0, 201, 80, .1);
+    --callout-border: rgba(0, 201, 80, .28);
+    --callout-text: #7bf1a8;
+    --chip-on: #1e2939;
+    color-scheme: dark;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font: 14px/1.55 'DM Sans', ui-sans-serif, system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  .app { display: grid; grid-template-columns: 380px minmax(0, 1fr); min-height: 100vh; }
+
+  /* ---------- Sidebar documentation ---------- */
+  .doc {
+    position: sticky; top: 0; height: 100vh; overflow-y: auto;
+    padding: 56px 40px 64px;
+    background: var(--side);
+    border-right: 1px solid var(--rule);
+    font-size: 13px; color: var(--muted);
+  }
+  .doc h1 { margin: 0 0 28px; font-size: 26px; font-weight: 500; line-height: 1.2; color: var(--text); letter-spacing: -.01em; }
+  .doc h3 { margin: 28px 0 10px; font-size: 14px; font-weight: 500; color: var(--accent); }
+  .doc p { margin: 0 0 10px; }
+  .doc ul { margin: 0 0 10px; padding-left: 20px; }
+  .doc li { margin: 2px 0; }
+  .callout {
+    margin: 12px 0; padding: 10px 12px; border-radius: 6px;
+    background: var(--callout-bg); border: 1px solid var(--callout-border); color: var(--callout-text);
+  }
+  .doc .back { display: inline-block; margin-bottom: 24px; font-size: 12px; color: var(--soft); text-decoration: none; }
+  .doc .back:hover { color: var(--accent); }
+
+  /* ---------- Main ---------- */
+  main { padding: 0 56px 96px; }
+  .topbar {
+    position: sticky; top: 0; z-index: 100;
+    display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px 24px;
+    margin: 0 -56px; padding: 14px 56px;
+    background: color-mix(in srgb, var(--bg) 86%, transparent);
+    backdrop-filter: saturate(1.4) blur(10px); -webkit-backdrop-filter: saturate(1.4) blur(10px);
+    border-bottom: 1px solid var(--rule);
+  }
+  .topbar strong { font-size: 15px; font-weight: 600; }
+  .topbar .ctrls { display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: center; }
+  .ctrl-label { font-size: 12px; color: var(--soft); margin-right: 6px; }
+  .seg { display: inline-flex; padding: 3px; gap: 2px; border-radius: 10px; background: var(--panel); border: 1px solid var(--panel-border); }
+  .seg button {
+    height: 30px; padding: 0 12px; border: 0; border-radius: 7px; background: none; cursor: pointer;
+    font: 500 13px 'DM Sans', sans-serif; color: var(--soft);
+  }
+  .seg button:hover { color: var(--text); }
+  .seg button[aria-pressed="true"] { background: var(--chip-on); color: var(--text); box-shadow: 0 1px 2px rgba(16, 24, 40, .1), 0 0 0 1px var(--panel-border); }
+  .seg button:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+  section { padding-top: 56px; }
+  section + section { border-top: 1px solid var(--rule); margin-top: 56px; }
+  h2 { margin: 0 0 8px; font-size: 20px; font-weight: 500; letter-spacing: -.005em; }
+  .lede { margin: 0 0 24px; color: var(--soft); max-width: 72ch; }
+  h4 { margin: 0 0 14px; font-size: 14px; font-weight: 500; color: var(--accent); }
+  h5 { margin: 18px 0 6px; font-size: 12px; font-weight: 600; color: var(--text); }
+  .copy { font-size: 13px; color: var(--muted); }
+  .copy ul { margin: 0; padding-left: 18px; }
+  .copy li { margin: 2px 0; }
+  .cols { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px 32px; margin-bottom: 24px; }
+
+  .panel { position: relative; background: var(--panel); border: 1px solid var(--panel-border); border-radius: 12px; }
+  .card { background: var(--card); border: 1px solid var(--panel-border); border-radius: 10px; }
+  .panel > div:not(.callouts) { max-width: 100%; }
+  .demo { display: flex; justify-content: center; padding: 48px 32px; }
+  .demo.tall { min-height: 560px; }
+
+  /* Playground */
+  .play { display: grid; grid-template-columns: minmax(0, 1fr); gap: 20px; }
+  .play .panel { min-height: 560px; padding: 48px 32px; display: flex; justify-content: center; }
+  .info { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px 32px; padding: 20px 24px; font-size: 13px; color: var(--muted); }
+  .info h5:first-child { margin-top: 0; }
+  .readout { font-size: 18px; font-weight: 500; color: var(--text); margin: 2px 0 4px; }
+  .keys { display: grid; grid-template-columns: auto 1fr; gap: 6px 12px; align-items: center; margin: 0; }
+  .keys dt { white-space: nowrap; }
+  .keys dd { margin: 0; }
+  .kbd {
+    display: inline-block; min-width: 22px; padding: 0 5px; height: 22px; line-height: 20px; text-align: center;
+    border: 1px solid var(--panel-border); border-radius: 5px; background: var(--card);
+    font: 500 11px 'DM Sans', sans-serif; color: var(--soft);
+  }
+  .try { padding-left: 18px; margin: 0; }
+  .try li { margin: 4px 0; }
+  code { font: 12px ui-monospace, 'Cascadia Code', Consolas, monospace; padding: 1px 5px; border-radius: 4px; background: var(--panel); border: 1px solid var(--panel-border); }
+
+  /* Anatomy */
+  .stage { padding: 56px 88px; display: flex; justify-content: center; }
+  .callouts { position: absolute; inset: 0; pointer-events: none; }
+  .co-line { position: absolute; height: 1px; }
+  .co-dot {
+    position: absolute; width: 24px; height: 24px; margin-top: -12px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font: 500 11px 'DM Sans', sans-serif; color: #fff;
+  }
+  .parts { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr); gap: 20px; margin-top: 20px; }
+  .parts ol { margin: 0; padding: 24px 24px 24px 42px; font-size: 13px; color: var(--muted); }
+  .parts ol li { margin: 8px 0; }
+  .parts ol b { font-weight: 500; color: var(--text); }
+  .legend { padding: 20px 20px 16px; }
+  .legend h5 { margin: 0 0 18px; font-size: 13px; font-weight: 600; }
+  .dp.lg-grid { width: auto; max-width: none; display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px 8px; background: none; }
+  .lg-item { display: flex; flex-direction: column; align-items: center; gap: 8px; font-size: 12px; text-align: center; color: var(--muted); }
+  .lg-item .dp-cell { width: 40px; }
+  .lg-item .dp-day { pointer-events: none; }
+  .lg-strip { display: flex; }
+
+  /* States */
+  .states { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px 20px; }
+  .state figure { margin: 0; }
+  .state .panel { height: 220px; display: flex; align-items: center; justify-content: center; padding: 24px; }
+  .state .panel > div { width: 320px; }
+  .state figcaption { margin-top: 12px; text-align: center; font-size: 13px; color: var(--text); }
+  .state figcaption span { display: block; font-size: 12px; color: var(--soft); }
+
+  /* Range selection & features */
+  .rules { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px 32px; margin: 0 0 24px; padding-left: 18px; font-size: 13px; color: var(--muted); }
+  .stack { display: grid; grid-template-columns: minmax(0, 1fr); gap: 20px; }
+  .demo-cap { margin: 0 0 16px; font-size: 13px; font-weight: 500; color: var(--text); }
+  .demo-wrap { display: flex; flex-direction: column; align-items: center; min-width: 0; }
+  .demo-wrap > div { max-width: 100%; }
+  .feature + .feature { margin-top: 48px; }
+  .feature .copy { margin-bottom: 20px; }
+  .theme-well { border-radius: 12px; border: 1px solid; overflow: visible; }
+  .theme-well header { display: flex; justify-content: space-between; align-items: baseline; padding: 14px 18px; border-bottom: 1px solid; }
+  .theme-well header b { font-weight: 500; font-size: 14px; }
+  .theme-well header span { font-size: 12px; }
+  .theme-well .well { display: flex; justify-content: center; padding: 28px 16px 36px; }
+  .theme-well .well > div { max-width: 100%; }
+  .theme-well.light { background: #ffffff; color: #101828; border-color: #eaecf0; }
+  .theme-well.light header { border-color: #eaecf0; }
+  .theme-well.light header span { color: #6a7282; }
+  .theme-well.dark { background: #101828; color: #f3f4f6; border-color: #1e2939; }
+  .theme-well.dark header { border-color: #1e2939; }
+  .theme-well.dark header span { color: #99a1af; }
+
+  footer.note { margin-top: 64px; font-size: 12px; color: var(--soft); }
+
+  @media (max-width: 1280px) {
+    .cols { grid-template-columns: 1fr 1fr; }
+    .parts { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 1080px) {
+    .app { grid-template-columns: minmax(0, 1fr); }
+    .doc { position: static; height: auto; border-right: 0; border-bottom: 1px solid var(--rule); padding: 36px 24px; }
+    main { padding: 0 24px 72px; }
+    .topbar { margin: 0 -24px; padding: 12px 24px; }
+    .states { grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); }
+    .info { grid-template-columns: 1fr; }
+    .rules { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 640px) {
+    main { padding: 0 16px 64px; }
+    .topbar { margin: 0 -16px; padding: 10px 16px; }
+    .doc { padding: 28px 16px; }
+    .cols { grid-template-columns: 1fr; }
+    .play .panel, .stage, .demo { padding: 24px 12px; min-height: 0; }
+    .dp.lg-grid { grid-template-columns: repeat(2, 1fr); }
+    .theme-well .well { padding: 20px 8px 28px; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="doc" aria-label="Documentation">
+    <a class="back" href="../calendar-date-picker/index.html">← 1. Calendar Date Picker</a>
+    <a class="back" href="../actual-date-time/index.html" style="margin-left:14px">4. Actual Date &amp; Time →</a>
+    <a class="back" href="../time-picker/index.html" style="margin-left:14px">5. Time Picker →</a>
+    <h1>2. Date Range Picker</h1>
+    <p>A date input that allows users to select a start date and end date as a continuous period.</p>
+    <p>Goal: make it quick and clear to select a date range while helping users understand the duration and avoid invalid ranges.</p>
+    <p>Examples</p>
+    <ul>
+      <li>Treatment period</li>
+      <li>Medication period</li>
+      <li>Procedure → follow-up</li>
+      <li>Lab monitoring period</li>
+      <li>Clinical history</li>
+      <li>Reporting period</li>
+      <li>Appointment availability</li>
+    </ul>
+
+    <h3>When To Use</h3>
+    <ul>
+      <li>Both a start and end date are required.</li>
+      <li>The dates represent one continuous period.</li>
+      <li>Seeing the dates together provides useful context.</li>
+      <li>The user may benefit from calendar-based range selection.</li>
+      <li>Common date ranges can be provided as quick actions.</li>
+    </ul>
+
+    <h3>When Not To Use</h3>
+    <ul>
+      <li>Only one date is required → Known Date / Calendar Date Picker</li>
+      <li>The dates represent two unrelated events.</li>
+      <li>Time is also required → Date + Time Picker</li>
+      <li>The date is approximate or partially known → Clinical Date</li>
+      <li>Multiple separate dates need to be selected.</li>
+    </ul>
+
+    <h3>Input Rules</h3>
+    <ul>
+      <li>Provide clearly labelled Start date and End date.</li>
+      <li>Allow direct typing as well as calendar selection.</li>
+      <li>Support keyboard input.</li>
+      <li>Allow the same date for start and end when a single-day range is valid.</li>
+      <li>Use 4-digit years where appropriate.</li>
+      <li>Keep the selected range synchronized between the input and calendar.</li>
+    </ul>
+
+    <h3>Behavior</h3>
+    <ul>
+      <li>User selects the start date.</li>
+      <li>User selects the end date.</li>
+      <li>The dates between them are highlighted as the selected range.</li>
+      <li>Preview the potential range when hovering or focusing on an end date.</li>
+      <li>Allow either date to be edited independently.</li>
+      <li>Provide Cancel and Done when the selection should not be committed immediately.</li>
+      <li>Start and end dates use a strong selected state.</li>
+      <li>Dates between them use a lighter range state.</li>
+      <li>The range should appear visually continuous.</li>
+      <li>Do not require the start date to appear in the left calendar and the end date in the right calendar.</li>
+    </ul>
+
+    <h3>Smart Behavior</h3>
+    <p>The component can provide contextual assistance:</p>
+    <ul>
+      <li>Recommended date ranges</li>
+      <li>Common clinical periods</li>
+      <li>Relevant events</li>
+      <li>Minimum/maximum dates</li>
+      <li>Dependent date constraints</li>
+      <li>Ongoing periods</li>
+      <li>Duration of the selected range</li>
+    </ul>
+    <div class="callout">Recommendations should guide, not force the user.</div>
+
+    <h3>Validation &amp; Constraints</h3>
+    <ul>
+      <li>Missing start date</li>
+      <li>Missing end date</li>
+      <li>Invalid date</li>
+      <li>End date before start date</li>
+      <li>Date outside allowed range</li>
+      <li>Unavailable dates</li>
+      <li>Conflicting clinical dates</li>
+      <li>Invalid clinical sequence</li>
+      <li>If the user picks an end date that is before the start date, that date becomes the new start date.</li>
+    </ul>
+
+    <h3>Accessibility</h3>
+    <ul>
+      <li>Clearly label Start and End dates.</li>
+      <li>Support complete keyboard interaction.</li>
+      <li>Provide visible focus states.</li>
+      <li>Don't rely on color alone to communicate the range.</li>
+      <li>Clearly announce start, end, and in-range dates to screen readers.</li>
+      <li>Ensure disabled dates are understandable.</li>
+      <li>Maintain predictable focus when moving between dates.</li>
+      <li>Provide accessible error messages.</li>
+      <li>Ensure adequate touch targets.</li>
+    </ul>
+  </aside>
+
+  <main>
+    <div class="topbar">
+      <strong>Date Range Picker</strong>
+      <div class="ctrls">
+        <div><span class="ctrl-label" id="ds-label">Design system</span>
+          <div class="seg" role="group" aria-labelledby="ds-label" id="ds-switch">
+            <button type="button" data-ds="custom" aria-pressed="true">Custom</button>
+            <button type="button" data-ds="ant" aria-pressed="false">Ant Design</button>
+            <button type="button" data-ds="mui" aria-pressed="false">MUI</button>
+          </div>
+        </div>
+        <div><span class="ctrl-label" id="th-label">Theme</span>
+          <div class="seg" role="group" aria-labelledby="th-label" id="theme-switch">
+            <button type="button" data-theme="light">Light</button>
+            <button type="button" data-theme="dark">Dark</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Playground -->
+    <section id="playground" style="padding-top:40px">
+      <h2>Playground</h2>
+      <p class="lede">Uses today's real date. Pick a start and an end date, try the quick ranges and the recommended ranges, or type both dates directly.</p>
+      <div class="play">
+        <div class="panel"><div id="pg"></div></div>
+        <div class="card info">
+          <div>
+            <h5>Committed range</h5>
+            <div class="readout" id="pg-out">None</div>
+            <div id="pg-sub" style="color:var(--soft);font-size:12px">Pick dates, then press Done</div>
+          </div>
+          <div>
+            <h5>Try</h5>
+            <ul class="try">
+              <li>Hover the pink band to see why the range is recommended</li>
+              <li>Pick a range across the grey struck-out dates to see it blocked</li>
+              <li>Pick an end date before the start, and it becomes the new start</li>
+              <li>Type <code>13/05/2026</code> in Start date, then press Enter</li>
+              <li>Type only a start date, then click away</li>
+            </ul>
+          </div>
+          <div>
+            <h5>Keyboard</h5>
+            <dl class="keys">
+              <dt><span class="kbd">↓</span></dt><dd>Open calendar from a date field</dd>
+              <dt><span class="kbd">←</span> <span class="kbd">→</span> <span class="kbd">↑</span> <span class="kbd">↓</span></dt><dd>Move by day / week, previewing the range</dd>
+              <dt><span class="kbd">PgUp</span> <span class="kbd">PgDn</span></dt><dd>Month (with Shift: year)</dd>
+              <dt><span class="kbd">↵</span></dt><dd>Set start, then end</dd>
+              <dt><span class="kbd">Esc</span></dt><dd>Cancel and close</dd>
+            </dl>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Anatomy -->
+    <section id="anatomy">
+      <h2>Anatomy</h2>
+      <p class="lede">The callouts are measured from the rendered component, so they follow each design system's layout.</p>
+      <div class="panel stage" id="anat-stage"><div id="anat"></div><div class="callouts" aria-hidden="true"></div></div>
+      <div class="parts">
+        <div class="panel">
+          <ol>
+            <li><b>Input field</b> – Start and end dates, each typed or picked, separated by an arrow.</li>
+            <li><b>Quick ranges</b> – Custom, Recommended, and common periods like This week.</li>
+            <li><b>Month / year navigation</b> – Moves each month; the title opens the year list.</li>
+            <li><b>Weekday header</b> – Days of the week, starting on Monday.</li>
+            <li><b>Range calendar</b> – Two months; start and end are strong, days between use a lighter band.</li>
+            <li><b>Keyboard navigation guide</b> – How to move and select with the keyboard.</li>
+            <li><b>Duration and actions</b> – Length of the range, plus Cancel and Done to confirm it.</li>
+          </ol>
+        </div>
+        <div class="card legend">
+          <h5>Dates Legend</h5>
+          <div id="legend"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- States -->
+    <section id="states">
+      <h2>States</h2>
+      <p class="lede">Input field states. The error example uses the spec's message.</p>
+      <div class="states" id="states-grid"></div>
+    </section>
+
+    <!-- Range selection -->
+    <section id="range-selection">
+      <h2>Range Selection</h2>
+      <p class="lede">How a range is built inside the calendar. Both demos are interactive.</p>
+      <ul class="rules">
+        <li>The first click sets the start date; the next click sets the end date.</li>
+        <li>Hovering or focusing a date previews the range before it's chosen.</li>
+        <li>Picking a date before the start makes it the new start.</li>
+        <li>Clicking the same date twice makes a single-day range.</li>
+        <li>Focus the Start or End field to change just that date.</li>
+        <li>A range can't cover unavailable dates; the calendar explains which ones.</li>
+      </ul>
+      <div class="stack">
+        <div class="panel demo"><div class="demo-wrap"><p class="demo-cap">Choosing the end date: preview while hovering</p><div id="rs-preview"></div></div></div>
+        <div class="panel demo"><div class="demo-wrap"><p class="demo-cap">Blocked range: it would cover unavailable dates</p><div id="rs-blocked"></div></div></div>
+      </div>
+    </section>
+
+    <!-- Functionalities -->
+    <section id="functionalities">
+      <h2>Functionalities</h2>
+      <p class="lede">Tooltips are pinned open to match the spec. Hovering other dates moves them.</p>
+
+      <div class="feature">
+        <div class="copy">
+          <h4>1. Recommended Dates</h4>
+          <div class="cols">
+            <div>
+              <h5>Where To Use</h5>
+              <ul>
+                <li>A specific date range is preferred based on clinical or workflow rules.</li>
+                <li>The system has enough context to identify a suitable range.</li>
+                <li>Timing of a follow-up, review, procedure, or monitoring period matters.</li>
+                <li>Multiple valid ranges are available, but one better matches the workflow.</li>
+              </ul>
+            </div>
+            <div>
+              <h5>When To Use</h5>
+              <ul>
+                <li>A meaningful recommendation can be calculated.</li>
+                <li>The recommendation has a clear reason.</li>
+                <li>The user benefits from seeing the preferred range before making a selection.</li>
+                <li>The recommendation can change based on patient, workflow, availability, or clinical context.</li>
+              </ul>
+            </div>
+            <div>
+              <h5>How To Use</h5>
+              <ul>
+                <li>Identify a valid date range based on the current context.</li>
+                <li>Highlight the recommended range in the calendar.</li>
+                <li>Show why the range is recommended.</li>
+                <li>Keep other valid dates selectable.</li>
+                <li>Allow the user to modify or select a different range.</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+        <div class="panel demo tall"><div id="f-rec"></div></div>
+      </div>
+
+      <div class="feature">
+        <div class="copy">
+          <h4>2. Contextual Quick Actions</h4>
+          <div class="cols">
+            <div>
+              <h5>Where To Use</h5>
+              <ul>
+                <li>When the system has enough clinical or workflow context to recommend a range.</li>
+                <li>When there are multiple valid ranges but some are more appropriate for the current context.</li>
+                <li>For treatment periods, monitoring windows, review periods, and other continuous date ranges.</li>
+                <li>When the reason behind the recommendation can be clearly explained.</li>
+              </ul>
+            </div>
+            <div>
+              <h5>When To Use</h5>
+              <ul>
+                <li>When a recommendation is based on a defined rule, clinical guideline, or workflow condition.</li>
+                <li>When the recommended range can be calculated from relevant dates or context.</li>
+                <li>When showing the reason helps the user make an informed selection.</li>
+                <li>When more than one valid recommendation may exist.</li>
+              </ul>
+            </div>
+            <div>
+              <h5>How To Use</h5>
+              <ul>
+                <li>Show recommended ranges as selectable options.</li>
+                <li>Display the date range prominently.</li>
+                <li>Provide a short explanation for why the range is recommended.</li>
+                <li>Include relevant supporting information when available.</li>
+                <li>Keep the recommendation optional; users can still select a custom range.</li>
+                <li>Update recommendations when the underlying context changes.</li>
+                <li>Avoid showing recommendations when there is insufficient context.</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+        <div class="panel demo"><div id="f-qa"></div></div>
+      </div>
+    </section>
+
+    <!-- Light & dark -->
+    <section id="themes">
+      <h2>Light and Dark</h2>
+      <p class="lede">The current design system in both themes side by side. These follow the design system switch but ignore the theme switch.</p>
+      <div class="stack" id="themes-grid"></div>
+    </section>
+
+    <footer class="note">Files: <code>daterangepicker.js</code> · <code>daterangepicker.css</code>, built on <code>../calendar-date-picker/datepicker.js</code> · <code>datepicker.css</code>.</footer>
+  </main>
+</div>
+
+<script src="../calendar-date-picker/datepicker.js"></script>
+<script src="daterangepicker.js"></script>
+<script>
+(function () {
+  const { toKey, addDays, MONTHS } = DatePicker.utils;
+  const root = document.documentElement;
+  let DS = 'custom';
+  try { DS = localStorage.getItem('dp-doc-ds') || 'custom'; } catch (e) {}
+  if (!['custom', 'ant', 'mui'].includes(DS)) DS = 'custom';
+  let THEME = root.dataset.theme;
+
+  /* ---------------- Demo data ---------------- */
+  const WHY_TREAT = {
+    title: 'Why this date range?',
+    reason: '7-day treatment period based on the current treatment plan.',
+    checks: ['Within treatment window', 'No scheduling conflicts']
+  };
+  const DEC = {
+    today: '2025-12-02',
+    recommendedRanges: [Object.assign({ start: '2025-12-15', end: '2025-12-21' }, WHY_TREAT)],
+    recommendationSummary: 'The treatment plan recommends a 7-day treatment period starting 15 December 2025.'
+  };
+  const LEAVE = {
+    '2025-12-11': 'Provider on leave (Dec 11–14).', '2025-12-12': 'Provider on leave (Dec 11–14).',
+    '2025-12-13': 'Provider on leave (Dec 11–14).', '2025-12-14': 'Provider on leave (Dec 11–14).'
+  };
+  const MON = {
+    today: '2026-10-19',
+    viewMonth: '2026-10-01',
+    recommendedRanges: [
+      { start: '2026-10-20', end: '2026-11-02', title: 'Why this date range?', reason: '14-day monitoring period after the procedure on 19 October 2026.', checks: ['Within recommended window', 'No scheduling conflicts'] },
+      { start: '2026-10-26', end: '2026-11-08', title: 'Why this date range?', reason: '14-day monitoring period after the procedure on 19 October 2026.', checks: ['Within recommended window'] }
+    ],
+    recommendationSummary: "A patient's treatment plan recommends a 14-day monitoring period after a procedure on 19 October 2026."
+  };
+
+  function playgroundData() {
+    const t = new Date(), today = new Date(t.getFullYear(), t.getMonth(), t.getDate());
+    const at = n => addDays(today, n);
+    const sh = d => `${MONTHS[d.getMonth()].slice(0, 3)} ${d.getDate()}`;
+    const unavailable = {};
+    for (let i = 12; i <= 15; i++) unavailable[toKey(at(i))] = `Provider on leave (${sh(at(12))}–${sh(at(15))}).`;
+    const events = {};
+    events[toKey(at(1))] = { title: '1 Appointment scheduled', items: ['9:00 AM — Lab review'] };
+    events[toKey(at(6))] = { title: '2 Appointments scheduled', items: ['10:00 AM — Follow-up', '2:30 PM — Consultation'] };
+    return {
+      today, unavailable, events,
+      recommendedRanges: [
+        { start: at(3), end: at(9), title: 'Why this date range?', reason: '7-day treatment period based on the current treatment plan.', checks: ['Within treatment window', 'No scheduling conflicts'] },
+        { start: at(17), end: at(23), title: 'Why this date range?', reason: 'Alternative 7-day period that starts after the provider returns from leave.', checks: ['Within treatment window'] }
+      ],
+      recommendationSummary: 'The treatment plan recommends a 7-day treatment period within the next four weeks.'
+    };
+  }
+
+  /* ---------------- Mount ---------------- */
+  const all = [], themed = [];
+  const make = (id, opts, fixedTheme) => {
+    const p = new DateRangePicker(document.getElementById(id), Object.assign({ ds: DS, theme: fixedTheme || THEME }, opts));
+    all.push(p);
+    if (!fixedTheme) themed.push(p);
+    return p;
+  };
+
+  // Playground
+  const out = document.getElementById('pg-out'), sub = document.getElementById('pg-sub');
+  const fmtL = d => d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+  make('pg', Object.assign(playgroundData(), {
+    label: 'Treatment period',
+    onChange: v => {
+      if (v.start && v.end) {
+        const n = Math.round((v.end - v.start) / 86400000) + 1;
+        out.textContent = `${fmtL(v.start)} – ${fmtL(v.end)}`;
+        sub.textContent = `${n} day${n > 1 ? 's' : ''} · ${toKey(v.start)} / ${toKey(v.end)}`;
+      } else { out.textContent = 'None'; sub.textContent = 'Pick dates, then press Done'; }
+    }
+  }));
+
+  // Anatomy: "This week" selected
+  make('anat', {
+    today: '2025-12-16', value: { start: '2025-12-15', end: '2025-12-21' }, inline: true,
+    recommendedRanges: [Object.assign({ start: '2026-02-02', end: '2026-02-08' }, WHY_TREAT)]
+  });
+
+  // States
+  const STATES = [
+    ['Default', 'Resting, empty', {}],
+    ['Focused', 'Keyboard focus: border + focus ring', { state: 'focused' }],
+    ['Active', 'Open / being interacted with', { state: 'active' }],
+    ['Filled', 'Both dates entered', { value: { start: '2025-12-08', end: '2026-01-07' } }],
+    ['Disabled', 'Not editable', { value: { start: '2025-12-08', end: '2026-01-07' }, state: 'disabled' }],
+    ['Error', 'End date missing', { value: { start: '2025-12-08' }, error: 'Please enter end date', errorPart: 'end' }]
+  ];
+  const sg = document.getElementById('states-grid');
+  STATES.forEach(([name, subtitle, o], i) => {
+    const f = document.createElement('div');
+    f.className = 'state';
+    f.innerHTML = `<figure><div class="panel"><div id="st${i}"></div></div><figcaption>${name}<span>${subtitle}</span></figcaption></figure>`;
+    sg.appendChild(f);
+    make('st' + i, Object.assign({ static: true, today: '2025-12-02' }, o));
+  });
+
+  // Range selection
+  make('rs-preview', { today: '2025-12-02', inline: true, demo: { draft: { start: '2025-12-08' }, preview: '2025-12-18', hover: '2025-12-18' } });
+  make('rs-blocked', {
+    today: '2025-12-02', inline: true, unavailable: LEAVE,
+    demo: { draft: { start: '2025-12-08' }, note: 'The range includes unavailable dates (Dec 11–14). Choose dates around them.' }
+  });
+
+  // Functionalities
+  make('f-rec', Object.assign({}, DEC, { label: 'Treatment period', inline: true, demo: { tooltip: '2025-12-15', hover: '2025-12-15' } }));
+  make('f-qa', Object.assign({}, MON, { label: 'Monitoring period', inline: true, demo: { view: 'recommended', draft: { start: '2026-10-20', end: '2026-11-02' } } }));
+
+  // Light & dark
+  const tg = document.getElementById('themes-grid');
+  ['light', 'dark'].forEach(th => {
+    const w = document.createElement('div');
+    w.className = `theme-well ${th}`;
+    w.innerHTML = `<header><b>${th === 'light' ? 'Light' : 'Dark'}</b><span>Recommended range, events and unavailable dates</span></header><div class="well"><div id="tw-${th}"></div></div>`;
+    tg.appendChild(w);
+    make(`tw-${th}`, Object.assign({}, DEC, {
+      label: 'Treatment period', inline: true, unavailable: LEAVE,
+      events: { '2025-12-05': { title: '2 Appointments scheduled', items: ['10:00 AM — Follow-up', '2:30 PM — Consultation'] } },
+      value: { start: '2025-12-02', end: '2025-12-09' }
+    }), th);
+  });
+
+  /* ---------------- Legend ---------------- */
+  function renderLegend() {
+    const day = (cls, marks = '') => `<span class="dp-day ${cls}"><span class="dp-num">1</span>${marks ? `<span class="dp-marks">${marks}</span>` : ''}</span>`;
+    const cell = (wrap, cls, marks) => `<div class="dp-cell ${wrap}">${day(cls, marks)}</div>`;
+    const items = [
+      [cell('', ''), 'Default'],
+      [cell('', 'is-hover'), 'Hover'],
+      [cell('is-unavail', 'is-unavail'), 'Not available'],
+      [cell('', 'is-today', '<i class="dp-dot"></i>'), 'Today'],
+      [`<div class="lg-strip">${cell('band band-sel band-s', 'is-selected')}${cell('band band-sel', '')}${cell('band band-sel band-e', 'is-selected')}</div>`, 'Start · in range · end'],
+      [`<div class="lg-strip">${cell('band band-pre band-s', 'is-selected')}${cell('band band-pre', '')}${cell('band band-pre band-e', '')}</div>`, 'Range preview'],
+      [`<div class="lg-strip">${cell('band band-rec band-s', 'is-rec')}${cell('band band-rec', '')}${cell('band band-rec band-e', 'is-rec')}</div>`, 'Recommended range'],
+      [cell('', 'has-ev', '<span class="dp-ev"><i></i><i></i></span>'), 'Has events']
+    ];
+    document.getElementById('legend').innerHTML =
+      `<div class="dp dpr lg-grid" data-ds="${DS}" data-theme="${THEME}">` +
+      items.map(([c, l]) => `<div class="lg-item">${c}<span>${l}</span></div>`).join('') + `</div>`;
+  }
+
+  /* ---------------- Anatomy callouts ---------------- */
+  const stage = document.getElementById('anat-stage');
+  const CO = [
+    [1, '.dpr-box', 'right', '#0055ff'],
+    [2, '.dpr-side', 'left', '#c534ff'],
+    [3, '.dpr-month[data-panel="1"] .dp-head', 'right', '#d38900'],
+    [4, '.dpr-month[data-panel="0"] .dp-weekdays', 'left', '#ff013c'],
+    [5, '.dpr-month[data-panel="1"] .dp-grid', 'right', '#0cb000'],
+    [6, '.dpr-foot .dp-keys', 'left', '#fb7a24'],
+    [7, '.dpr-actions', 'right', '#00a6f4']
+  ];
+  function annotate() {
+    const layer = stage.querySelector('.callouts');
+    layer.innerHTML = '';
+    const sr = stage.getBoundingClientRect(), pop = stage.querySelector('.dpr-pop');
+    if (!pop || pop.hidden) return;
+    const pr = pop.getBoundingClientRect();
+    if (pr.left - sr.left < 72 || sr.right - pr.right < 72) return;
+    let html = '';
+    CO.forEach(([n, sel, side, color]) => {
+      const el = stage.querySelector(sel);
+      if (!el || !el.offsetParent) return;
+      const r = el.getBoundingClientRect();
+      const y = Math.round(r.top + r.height / 2 - sr.top);
+      if (side === 'right') {
+        const x0 = (n === 1 ? r.right : pr.right) - sr.left, x1 = pr.right - sr.left + 40;
+        html += `<div class="co-line" style="left:${x0}px;top:${y}px;width:${x1 - x0}px;background:${color}"></div><div class="co-dot" style="left:${x1}px;top:${y}px;background:${color}">${n}</div>`;
+      } else {
+        const x1 = pr.left - sr.left, x0 = x1 - 40;
+        html += `<div class="co-line" style="left:${x0}px;top:${y}px;width:40px;background:${color}"></div><div class="co-dot" style="left:${x0 - 24}px;top:${y}px;background:${color}">${n}</div>`;
+      }
+    });
+    layer.innerHTML = html;
+  }
+  let raf = 0;
+  const schedule = () => { cancelAnimationFrame(raf); raf = requestAnimationFrame(annotate); };
+  new MutationObserver(schedule).observe(document.getElementById('anat'), { childList: true, subtree: true, attributes: true, attributeFilter: ['class', 'data-ds', 'hidden'] });
+  new ResizeObserver(schedule).observe(stage);
+  document.fonts && document.fonts.ready.then(schedule);
+
+  /* ---------------- Switches ---------------- */
+  const dsBtns = [...document.querySelectorAll('#ds-switch button')];
+  const thBtns = [...document.querySelectorAll('#theme-switch button')];
+  function reflect() {
+    dsBtns.forEach(b => b.setAttribute('aria-pressed', String(b.dataset.ds === DS)));
+    thBtns.forEach(b => b.setAttribute('aria-pressed', String(b.dataset.theme === THEME)));
+  }
+  dsBtns.forEach(b => b.addEventListener('click', () => {
+    DS = b.dataset.ds;
+    try { localStorage.setItem('dp-doc-ds', DS); } catch (e) {}
+    all.forEach(p => p.setDS(DS));
+    renderLegend(); reflect(); schedule();
+  }));
+  thBtns.forEach(b => b.addEventListener('click', () => {
+    THEME = b.dataset.theme;
+    root.dataset.theme = THEME;
+    try { localStorage.setItem('dp-doc-theme', THEME); } catch (e) {}
+    themed.forEach(p => p.setTheme(THEME));
+    renderLegend(); reflect();
+  }));
+
+  renderLegend();
+  reflect();
+  schedule();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,230 @@
+/* =========================================================================
+   UI Design System: tokens
+   One palette for every skin (custom, Ant Design, MUI). Light values on :root; dark values from the Dark mode spec. Dark values apply with [data-theme="dark"] on any
+   ancestor, or automatically via prefers-color-scheme unless
+   [data-theme="light"] is set.
+   ========================================================================= */
+
+:root {
+  /* Typography */
+  --ds-font-family: 'DM Sans', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --ds-font-display: 500 32px/40px var(--ds-font-family);
+  --ds-font-heading: 500 20px/28px var(--ds-font-family);
+  --ds-font-subheading: 500 16px/24px var(--ds-font-family);
+  --ds-font-body: 400 14px/20px var(--ds-font-family);
+  --ds-font-header: 500 14px/20px var(--ds-font-family);
+  --ds-font-label: 500 12px/16px var(--ds-font-family);
+  --ds-font-caption: 400 12px/16px var(--ds-font-family);
+  --ds-font-tooltip: 400 12px/20px var(--ds-font-family);
+  --ds-font-micro: 500 11px/14px var(--ds-font-family);
+
+  /* Spacing (4px grid) */
+  --ds-space-0_5: 2px;
+  --ds-space-1: 4px;
+  --ds-space-1_5: 6px;
+  --ds-space-2: 8px;
+  --ds-space-2_5: 10px;
+  --ds-space-3: 12px;
+  --ds-space-4: 16px;
+  --ds-space-5: 20px;
+  --ds-space-6: 24px;
+  --ds-space-8: 32px;
+  --ds-space-10: 40px;
+  --ds-space-12: 48px;
+
+  /* Size */
+  --ds-control-h: 32px;
+  --ds-button-h: 30px;
+  --ds-header-h: 48px;
+  --ds-chip-h: 24px;
+  --ds-cell: 32px;
+  --ds-keycap: 22px;
+  --ds-icon-md: 16px;
+  --ds-icon-sm: 14px;
+  --ds-popover-w: 320px;
+  --ds-popover-wide-w: 730px;
+  --ds-sidebar-w: 121px;
+  --ds-tooltip-w: 420px;
+
+  /* Radius */
+  --ds-radius-xs: 4px;
+  --ds-radius-sm: 6px;
+  --ds-radius-md: 8px;
+  --ds-radius-lg: 10px;
+  --ds-radius-xl: 12px;
+  --ds-radius-full: 9999px;
+
+  /* Motion */
+  --ds-duration: 150ms;
+  --ds-ease: ease;
+
+  /* Color: light */
+  --ds-text: #101828;
+  --ds-text-secondary: #364153;
+  --ds-text-muted: #6a7282;
+  --ds-text-disabled: #99a1af;
+  --ds-icon: #4a5565;
+  --ds-field-icon: #4a5565;
+  --ds-border: #d1d5dc;
+  --ds-border-hover: #99a1af;
+  --ds-border-subtle: #eaecf0;
+  --ds-divider: #f2f3f5;
+  --ds-hover: #f2f3f5;
+  --ds-chip-active: #eaecf0;
+  --ds-switch-track: #eaecf0;
+  --ds-switch-knob: #ffffff;
+  --ds-surface: #ffffff;
+  --ds-surface-subtle: #f9fafb;
+  --ds-surface-muted: #f2f3f5;
+  --ds-page: #ffffff;
+  --ds-page-side: #f2f8ff;
+
+  --ds-primary: #155dfc;
+  --ds-on-primary: #ffffff;
+  --ds-focus: #2b7fff;
+  --ds-primary-tint: #e2eefe;
+  --ds-focus-ring: #e2eefe;
+  --ds-primary-strong: #1447e6;
+  --ds-today: #155dfc;
+  --ds-accent-text: #155dfc;
+
+  --ds-error: #fb2c36;
+  --ds-error-text: #c10007;
+  --ds-error-ring: #ffe2e2;
+  --ds-success: #00c950;
+  --ds-success-bg: #dcfce7;
+  --ds-success-inverse: #31ef80;
+  --ds-event: #bb4d00;
+  --ds-recommend-border: #fed4ea;
+  --ds-recommend-glow: rgba(246, 51, 154, .22);
+  --ds-recommend-fill: #ffffff;
+  --ds-smart-from: #c534ff;
+  --ds-smart-to: #f6339a;
+
+  --ds-range-band: #e2eefe;
+  --ds-range-preview: #eef4ff;
+  --ds-range-preview-edge: #2b7fff;
+  --ds-range-recommend: #fef3f9;
+  --ds-radio-ring: #bedbff;
+  --ds-primary-hover: #1447e6;
+
+  --ds-inverse: #101828;
+  --ds-on-inverse: #ffffff;
+  --ds-inverse-border: transparent;
+
+  /* Elevation */
+  --ds-shadow-popover: 0 12px 24px -6px rgba(16, 24, 40, .10), 0 4px 8px -2px rgba(16, 24, 40, .05);
+  --ds-shadow-nested: 0 10px 24px -6px rgba(16, 24, 40, .14), 0 2px 6px rgba(16, 24, 40, .05);
+  --ds-shadow-tooltip: 0 16px 32px -8px rgba(16, 24, 40, .30);
+
+  /* Focus recipes */
+  --ds-focus-shadow: 0 0 0 .5px var(--ds-focus), 0 0 0 3.5px var(--ds-focus-ring);
+  --ds-active-shadow: 0 0 0 .5px var(--ds-focus);
+  --ds-error-shadow: 0 0 0 .5px var(--ds-error);
+}
+
+/* Color: dark (same values in both blocks so an explicit toggle wins either way) */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --ds-text: #ffffff;
+    --ds-text-secondary: #d1d5dc;
+    --ds-text-muted: #99a1af;
+    --ds-text-disabled: #6a7282;
+    --ds-icon: #99a1af;
+    --ds-border: #4a5565;
+    --ds-border-hover: #6a7282;
+    --ds-border-subtle: #364153;
+    --ds-divider: #1e2939;
+    --ds-hover: #1e2939;
+    --ds-chip-active: #364153;
+    --ds-switch-track: #1e2939;
+    --ds-switch-knob: #364153;
+    --ds-surface: #030712;
+    --ds-surface-subtle: #101828;
+    --ds-surface-muted: #1e2939;
+    --ds-page: #101828;
+    --ds-page-side: #0a1120;
+    --ds-primary-tint: rgba(43, 127, 255, .20);
+    --ds-focus-ring: rgba(43, 127, 255, .30);
+    --ds-primary-strong: #8ec5ff;
+    --ds-today: #2b7fff;
+    --ds-accent-text: #51a2ff;
+    --ds-error-text: #ff6467;
+    --ds-error-ring: rgba(251, 44, 54, .25);
+    --ds-success: #05df72;
+    --ds-success-bg: rgba(0, 201, 80, .1);
+    --ds-success-inverse: #05df72;
+    --ds-event: #e17100;
+    --ds-recommend-border: #c2447f;
+    --ds-recommend-glow: rgba(246, 51, 154, .35);
+    --ds-range-band: rgba(43, 127, 255, .22);
+    --ds-range-preview: rgba(43, 127, 255, .10);
+    --ds-range-preview-edge: #51a2ff;
+    --ds-range-recommend: rgba(246, 51, 154, .16);
+    --ds-radio-ring: rgba(43, 127, 255, .35);
+    --ds-primary-hover: #51a2ff;
+    --ds-inverse: #1e2939;
+    --ds-on-inverse: #ffffff;
+    --ds-inverse-border: #364153;
+    --ds-shadow-popover: 0 16px 32px -8px rgba(0, 0, 0, .65), 0 4px 10px -2px rgba(0, 0, 0, .4);
+    --ds-shadow-nested: 0 12px 28px -6px rgba(0, 0, 0, .7);
+    --ds-shadow-tooltip: 0 16px 32px -8px rgba(0, 0, 0, .7);
+        --ds-primary: #2b7fff;
+    --ds-field-icon: #eaecf0;
+    --ds-recommend-fill: #4a2d45;
+    color-scheme: dark;
+  }
+}
+[data-theme="dark"] {
+  --ds-text: #ffffff;
+  --ds-text-secondary: #d1d5dc;
+  --ds-text-muted: #99a1af;
+  --ds-text-disabled: #6a7282;
+  --ds-icon: #99a1af;
+  --ds-border: #4a5565;
+  --ds-border-hover: #6a7282;
+  --ds-border-subtle: #364153;
+  --ds-divider: #1e2939;
+  --ds-hover: #1e2939;
+  --ds-chip-active: #364153;
+  --ds-switch-track: #1e2939;
+  --ds-switch-knob: #364153;
+  --ds-surface: #030712;
+  --ds-surface-subtle: #101828;
+  --ds-surface-muted: #1e2939;
+  --ds-page: #101828;
+  --ds-page-side: #0a1120;
+  --ds-primary-tint: rgba(43, 127, 255, .20);
+  --ds-focus-ring: rgba(43, 127, 255, .30);
+  --ds-primary-strong: #8ec5ff;
+  --ds-today: #2b7fff;
+  --ds-accent-text: #51a2ff;
+  --ds-error-text: #ff6467;
+  --ds-error-ring: rgba(251, 44, 54, .25);
+  --ds-success: #05df72;
+  --ds-success-bg: rgba(0, 201, 80, .1);
+  --ds-success-inverse: #05df72;
+  --ds-event: #e17100;
+  --ds-recommend-border: #c2447f;
+  --ds-recommend-glow: rgba(246, 51, 154, .35);
+  --ds-range-band: rgba(43, 127, 255, .22);
+  --ds-range-preview: rgba(43, 127, 255, .10);
+  --ds-range-preview-edge: #51a2ff;
+  --ds-range-recommend: rgba(246, 51, 154, .16);
+  --ds-radio-ring: rgba(43, 127, 255, .35);
+  --ds-primary-hover: #51a2ff;
+  --ds-inverse: #1e2939;
+  --ds-on-inverse: #ffffff;
+  --ds-inverse-border: #364153;
+  --ds-shadow-popover: 0 16px 32px -8px rgba(0, 0, 0, .65), 0 4px 10px -2px rgba(0, 0, 0, .4);
+  --ds-shadow-nested: 0 12px 28px -6px rgba(0, 0, 0, .7);
+  --ds-shadow-tooltip: 0 16px 32px -8px rgba(0, 0, 0, .7);
+    --ds-primary: #2b7fff;
+  --ds-field-icon: #eaecf0;
+  --ds-recommend-fill: #4a2d45;
+  color-scheme: dark;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root { --ds-duration: 0ms; }
+}

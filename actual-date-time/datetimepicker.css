@@ -1,0 +1,147 @@
+/* =========================================================================
+   Actual Date & Time
+   Load after datepicker.css. The root is `.dp.dpt`, so it inherits every --dp-*
+   token, the three skins, shared buttons (.dp-btn) and the note (.dp-note).
+   ========================================================================= */
+
+/* ---------- Tokens ---------- */
+.dpt {
+  --dpt-knob-shadow: 0 1px 2px rgba(16, 24, 40, .10);
+  --dpt-mer-on-bg: var(--dp-switch-knob);
+  --dpt-mer-on-text: var(--dp-text);
+  --dpt-link: var(--dp-year-text);
+}
+/* One palette for every skin; dark values follow the Dark mode spec */
+.dpt[data-theme="dark"] { --dpt-knob-shadow: 0 1px 2px rgba(0, 0, 0, .5); }
+
+/* =========================================================================
+   Field: one box, a date part and a time part
+   ========================================================================= */
+.dpt { width: auto; max-width: 100%; }
+.dpt.is-inline { width: var(--dp-pop-w); }
+.dpt-row { display: flex; align-items: center; gap: 8px; }
+.dpt .dpt-box { flex: 0 1 var(--dp-w); width: var(--dp-w); min-width: 0; gap: 0; padding: 0 10px 0 11px; }
+.dpt .dpt-box > .dp-icon:first-child { margin-right: 3px; }
+.dpt-seg {
+  display: flex; align-items: center; min-width: 0; height: 24px; padding: 0 4px;
+  border-radius: 6px; transition: box-shadow .15s;
+}
+.dpt-seg[data-part="date"] { flex: 0 0 126px; }
+.dpt-seg[data-part="time"] { flex: 1 1 auto; }
+.dpt-seg .dp-input { width: 100%; }
+.dpt-clock { margin: 0 5px 0 8px; }
+.dpt-clock svg { width: 15px; height: 15px; }
+.dpt-tz { flex: none; margin-left: 6px; font-size: 12px; color: var(--dp-muted); }
+.dpt.is-disabled .dpt-tz { color: var(--dp-disabled); }
+
+/* Custom (spec): keyboard focus outlines only the part being edited; the popover-open state outlines the whole field */
+.dpt[data-ds="custom"] .dpt-seg:focus-within,
+.dpt[data-ds="custom"] .dpt-seg.is-focus { box-shadow: 0 0 0 1px var(--dp-focus); }
+.dpt[data-ds="custom"].is-focused:not(.is-open):not(.is-active):not(.is-error) .dp-box {
+  border-color: var(--dp-border); box-shadow: none;
+}
+.dpt[data-ds="custom"].is-open .dpt-seg:focus-within { box-shadow: none; }
+
+/* Helper text (e.g. when the event was documented) */
+.dpt-hint { margin-top: 6px; font-size: 12px; line-height: 16px; color: var(--dp-muted); }
+.dpt-hint[hidden] { display: none; }
+
+/* Ant: one input line, clock icon as the divider, calendar suffix */
+.dpt[data-ds="ant"] .dpt-box { padding: 4px 11px; }
+.dpt[data-ds="ant"] .dpt-seg { height: auto; padding: 0; }
+.dpt[data-ds="ant"] .dpt-seg[data-part="date"] { flex: 1 1 0; }
+.dpt[data-ds="ant"] .dpt-seg[data-part="time"] { flex: 1 1 0; }
+.dpt[data-ds="ant"] .dpt-clock { margin: 0 10px; }
+.dpt[data-ds="ant"] .dpt-clock svg { width: 14px; height: 14px; }
+.dpt[data-ds="ant"] .dp-suffix { margin-left: 8px; }
+.dpt[data-ds="ant"] .dpt-hint { margin-top: 2px; font-size: 14px; line-height: 22px; }
+
+/* MUI: two sections in one outlined field */
+.dpt[data-ds="mui"] .dpt-box { padding: 0 14px; }
+.dpt[data-ds="mui"] .dpt-seg { height: auto; padding: 0; }
+.dpt[data-ds="mui"] .dpt-seg[data-part="date"] { flex: 0 0 112px; }
+.dpt[data-ds="mui"] .dpt-seg[data-part="time"] { margin-left: 8px; }
+.dpt[data-ds="mui"] .dpt-hint { margin: 3px 14px 0; line-height: 1.66; letter-spacing: .03333em; }
+
+/* =========================================================================
+   Now: popover quick action and standalone button
+   ========================================================================= */
+.dpt-quick { display: flex; align-items: center; gap: 8px; }
+.dpt-quick .dp-quick-in { flex-wrap: nowrap; }
+.dpt[data-ds="ant"] { --dp-pop-w: 320px; }
+.dpt[data-ds="ant"] .dpt-quick .dp-qa:not(.dpt-now-link) { padding: 0 8px; }
+.dpt[data-ds="mui"] .dpt-quick { padding: 12px 16px 4px; }
+.dpt[data-ds="mui"] .dpt-quick .dp-qa { height: 24px; padding: 0 8px; border-radius: 12px; line-height: 24px; }
+.dpt .dpt-now-link { color: var(--dpt-link); }
+.dpt-qsep { flex: none; width: 1px; height: 12px; background: var(--dp-pop-border); }
+.dpt[data-ds="ant"] .dpt-now-link { height: 28px; padding: 0 4px; font-size: 14px; color: var(--dpt-link); background: none; }
+.dpt[data-ds="ant"] .dpt-now-link:hover { color: var(--dp-primary-hover); background: none; }
+.dpt[data-ds="ant"] .dpt-qsep { height: 14px; }
+.dpt[data-ds="mui"] .dpt-now-link { background: none; box-shadow: inset 0 0 0 1px var(--dpt-link); color: var(--dpt-link); }
+.dpt[data-ds="mui"] .dpt-now-link:hover { background: var(--dp-primary-hover); }
+.dpt[data-ds="mui"] .dpt-qsep { display: none; }
+
+.dpt[data-ds="ant"] .dpt-now { height: 32px; padding: 0 15px; border-radius: 6px; }
+.dpt[data-ds="mui"] .dpt-now { height: 40px; padding: 5px 15px; border: 1px solid var(--dp-primary); }
+.dpt[data-ds="mui"] .dpt-now:disabled { border-color: var(--dp-disabled-border); }
+
+/* =========================================================================
+   Time entry inside the popover
+   ========================================================================= */
+.dpt-time { margin: 0 16px; padding: 14px 0 15px; border-top: 1px solid var(--dp-divider); }
+.dpt-time-label {
+  display: flex; align-items: center; gap: 9px;
+  font-size: 12px; font-weight: 500; line-height: 16px; color: var(--dp-text);
+}
+.dpt-time-label svg { width: 15px; height: 15px; color: var(--dp-icon); }
+.dpt-time-row { display: flex; gap: 8px; margin-top: 10px; }
+.dpt-time-in {
+  flex: 1; min-width: 0; height: 32px; margin: 0; padding: 0 10px;
+  border: 1px solid var(--dp-border); border-radius: 8px; outline: 0;
+  background: var(--dp-field-bg); font: inherit; font-size: 14px; color: var(--dp-text);
+  transition: border-color .15s, box-shadow .15s;
+}
+.dpt-time-in::placeholder { color: var(--dp-placeholder); opacity: 1; }
+.dpt-time-in:hover { border-color: var(--dp-border-hover); }
+.dpt-time-in:focus { border-color: var(--dp-focus); box-shadow: 0 0 0 .5px var(--dp-focus), 0 0 0 3.5px var(--dp-ring); }
+.dpt-ampm { flex: none; display: flex; width: 80px; height: 32px; padding: 2px; border-radius: 8px; background: var(--dp-switch-track); }
+.dpt-mer { flex: 1; border-radius: 6px; font-size: 12px; color: var(--dp-label); transition: background-color .12s, color .12s; }
+.dpt-mer:hover { color: var(--dp-text); }
+.dpt-mer.is-on { background: var(--dpt-mer-on-bg); color: var(--dpt-mer-on-text); box-shadow: var(--dpt-knob-shadow); }
+
+/* Ant: Input + Segmented */
+.dpt[data-ds="ant"] .dpt-time-label { gap: 8px; font-size: 14px; font-weight: 400; line-height: 22px; }
+.dpt[data-ds="ant"] .dpt-time-label svg { width: 14px; height: 14px; }
+.dpt[data-ds="ant"] .dpt-time-in { border-radius: 6px; padding: 4px 11px; }
+.dpt[data-ds="ant"] .dpt-time-in:hover { border-color: var(--dp-border-hover); }
+.dpt[data-ds="ant"] .dpt-time-in:focus { border-color: var(--dp-focus); box-shadow: 0 0 0 2px var(--dp-ring); }
+.dpt[data-ds="ant"] .dpt-ampm { width: 84px; border-radius: 6px; background: var(--dp-switch-track); }
+.dpt[data-ds="ant"] .dpt-mer { border-radius: 4px; font-size: 14px; color: var(--dp-label); }
+
+/* MUI: small outlined TextField + ToggleButtonGroup */
+.dpt[data-ds="mui"] .dpt-time { margin: 0 16px; }
+.dpt[data-ds="mui"] .dpt-time-label { font-size: 14px; }
+.dpt[data-ds="mui"] .dpt-time-label svg { width: 20px; height: 20px; }
+.dpt[data-ds="mui"] .dpt-time-in { height: 40px; padding: 8.5px 14px; border-radius: 4px; font-size: 16px; }
+.dpt[data-ds="mui"] .dpt-time-in:hover { border-color: var(--dp-border-hover); }
+.dpt[data-ds="mui"] .dpt-time-in:focus { border: 2px solid var(--dp-focus); padding: 7.5px 13px; box-shadow: none; }
+.dpt[data-ds="mui"] .dpt-ampm { width: 96px; height: 40px; padding: 0; border: 1px solid var(--dp-divider); border-radius: 4px; background: none; }
+.dpt[data-ds="mui"] .dpt-mer { border-radius: 0; font-size: 13px; font-weight: 500; letter-spacing: .02857em; color: var(--dp-muted); }
+.dpt[data-ds="mui"] .dpt-mer + .dpt-mer { border-left: 1px solid var(--dp-divider); }
+.dpt[data-ds="mui"] .dpt-mer.is-on { background: var(--dp-chip); color: var(--dp-text); box-shadow: none; }
+
+/* =========================================================================
+   Footer actions
+   ========================================================================= */
+.dpt-foot {
+  display: flex; align-items: center; justify-content: flex-end; gap: 8px;
+  padding: 12px 16px; border-top: 1px solid var(--dp-divider);
+}
+.dpt[data-ds="ant"] .dpt-foot { padding: 8px 12px; }
+.dpt[data-ds="mui"] .dpt-foot { padding: 8px; border-top: 0; }
+
+/* Narrow screens: field + Now button share the row */
+@media (max-width: 420px) {
+  .dpt .dpt-box { flex: 1 1 auto; width: auto; }
+  .dpt-seg[data-part="date"] { flex-basis: 108px; }
+}

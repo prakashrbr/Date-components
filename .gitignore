@@ -1,0 +1,15 @@
+# Packaged copies (the source folders are the real thing)
+*.zip
+*.skill
+
+# Local duplicates, not part of the components
+date-components-handoff/
+calendar-date-picker/calendar-date-picker/
+
+# Local tool settings
+.claude/
+
+# OS clutter
+.DS_Store
+Thumbs.db
+desktop.ini
